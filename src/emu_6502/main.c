@@ -102,11 +102,12 @@ int main()
 #endif
 
     // 6502エミュレート
-    cpu_6502_reset();
+    cpu_6502_init();
     printf("6502 Emu in RP2350\n");
     while (true)
     {
         cpu_6502_main();
+        sleep_ms(1000);
 #ifdef WDT_ENABLE
         watchdog_update();
 #endif
