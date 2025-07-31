@@ -18,6 +18,7 @@
 #include "hardware/clocks.h"
 #include "hardware/uart.h"
 
+#include "common.h"
 #include "cpu_6502.h"
 
 // (DEBUG)デバッグ用のUART
@@ -104,10 +105,11 @@ int main()
     // 6502エミュレート
     cpu_6502_init();
     printf("6502 Emu in RP2350\n");
+
     while (true)
     {
         cpu_6502_main();
-        sleep_ms(1000);
+        sleep_ms(100);
 #ifdef WDT_ENABLE
         watchdog_update();
 #endif
