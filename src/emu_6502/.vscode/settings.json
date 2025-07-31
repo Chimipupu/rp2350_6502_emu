@@ -41,6 +41,8 @@
         "*.dpf": "yaml",
         "*.html": "html",
         "cstdint": "c",
-        "compare": "c"
+        "compare": "c",
+        "string.h": "c",
+        "opcode_6502.h": "c"
     }
 }

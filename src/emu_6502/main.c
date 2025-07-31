@@ -18,8 +18,8 @@
 #include "hardware/clocks.h"
 #include "hardware/uart.h"
 
-#include "common.h"
 #include "cpu_6502.h"
+#include "common.h"
 
 // WDT有効マクロ
 // #define WDT_ENABLE

@@ -38,6 +38,7 @@ pico_sdk_init()
 add_executable(emu_6502
                 main.c
                 cpu_6502.c
+                opcode_6502.c
                 )
 
 pico_set_program_name(emu_6502 "emu_6502")

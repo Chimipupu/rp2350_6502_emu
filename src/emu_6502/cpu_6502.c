@@ -12,11 +12,18 @@
 #include "cpu_6502.h"
 #include "ansi_esc.h"
 #include <stdio.h>
+#include "opcode_6502.h"
 
+extern const opcode_6502_t g_6502_opcode_tbl[];
 cpu_6502_reg_t s_reg;
-static cpu_6502_t s_6502;
+
+static cpu_6502_data_t s_cpu_6502;
 static uint8_t s_rom[CPU_6502_ROM_SIZE];
 static uint8_t s_ram[CPU_6502_RAM_SIZE];
+
+static uint8_t* mem_map_ctrl(uint16_t addr);
+static void cpu_reset(void);
+static void vect_tbl_proc(uint16_t addr);
 
 #ifdef DEBUG_CPU_6502
 static void dbg_6502_info_print(void);
@@ -25,28 +32,22 @@ static void dbg_6502_info_print(void)
 {
     printf("\n[DEBUG] 6502 CPU REG info\n");
 
-    printf("[DEBUG] A:0x%02X X:0x%02X Y:0x%02X\n", s_6502.p_reg->a, s_6502.p_reg->x, s_6502.p_reg->y);
-    printf("[DEBUG] SP = 0x%02X PC = 0x%04X\n", s_6502.p_reg->sp, s_6502.p_reg->pc);
+    printf("[DEBUG] A:0x%02X X:0x%02X Y:0x%02X SP = 0x%02X PC = 0x%04X\n",
+            s_cpu_6502.p_reg->a, s_cpu_6502.p_reg->x, s_cpu_6502.p_reg->y, s_cpu_6502.p_reg->sp, s_cpu_6502.p_reg->pc);
 
     printf("[DEBUG] PSR = 0x%02X "
             "(N:%d V:%d B:%d D:%d i:%d Z:%d C:%d )\n",
-            s_6502.p_reg->psr.byte,
-            s_6502.p_reg->psr.bit.n,
-            s_6502.p_reg->psr.bit.v,
-            s_6502.p_reg->psr.bit.b,
-            s_6502.p_reg->psr.bit.d,
-            s_6502.p_reg->psr.bit.i,
-            s_6502.p_reg->psr.bit.z,
-            s_6502.p_reg->psr.bit.c
+            s_cpu_6502.p_reg->psr.byte,
+            s_cpu_6502.p_reg->psr.bit.n,
+            s_cpu_6502.p_reg->psr.bit.v,
+            s_cpu_6502.p_reg->psr.bit.b,
+            s_cpu_6502.p_reg->psr.bit.d,
+            s_cpu_6502.p_reg->psr.bit.i,
+            s_cpu_6502.p_reg->psr.bit.z,
+            s_cpu_6502.p_reg->psr.bit.c
             );
 }
 #endif // DEBUG_CPU_6502
-
-static uint8_t* mem_map_ctrl(uint16_t addr);
-static uint8_t mem_byte_read(uint16_t addr);
-static void mem_byte_write(uint16_t addr, uint8_t val);
-static void cpu_reset(void);
-static void vect_tbl_proc(uint16_t addr);
 
 /**
  * @brief メモリマップ処理
@@ -77,13 +78,13 @@ static uint8_t* mem_map_ctrl(uint16_t addr)
  * @param addr 16bitアドレス
  * @return uint8_t メモリ値
  */
-static uint8_t mem_byte_read(uint16_t addr)
+uint8_t mem_byte_read(uint16_t addr)
 {
     uint8_t* p = mem_map_ctrl(addr);
     if (p != NULL) {
         return *p;
     }
-    // TODO : I/Oや範囲外は0返却（必要に応じて変更可）
+    // TODO : I/Oや範囲外は0返却
     return 0;
 }
 
@@ -93,7 +94,7 @@ static uint8_t mem_byte_read(uint16_t addr)
  * @param addr 16bitアドレス
  * @param val 書き込み値
  */
-static void mem_byte_write(uint16_t addr, uint8_t val)
+void mem_byte_write(uint16_t addr, uint8_t val)
 {
     uint8_t* p = mem_map_ctrl(addr);
     // ROM領域は書き込み禁止
@@ -114,18 +115,18 @@ static void vect_tbl_proc(uint16_t addr)
     {
         case NMI_VECT_TBL_ADDR:
             // TODO : NMI割り込み処理
-            printf("\n[DEBUG] NMI (PC = 0x%04X)\n", s_6502.p_reg->pc);
+            printf("\n[DEBUG] NMI (PC = 0x%04X)\n", s_cpu_6502.p_reg->pc);
             break;
 
         case RST_VECT_TBL_ADDR:
             // リセット割り込み処理
-            printf("\n[DEBUG] Reset (PC = 0x%04X)\n", s_6502.p_reg->pc);
+            printf("\n[DEBUG] Reset (PC = 0x%04X)\n", s_cpu_6502.p_reg->pc);
             cpu_reset();
             break;
 
         case IRQ_BRK_VECT_TBL_ADDR:
             // TODO : IRQ/BRK割り込み処理
-            printf("\n[DEBUG] IRQ/BRK (PC = 0x%04X)\n", s_6502.p_reg->pc);
+            printf("\n[DEBUG] IRQ/BRK (PC = 0x%04X)\n", s_cpu_6502.p_reg->pc);
             break;
 
         default:
@@ -140,47 +141,20 @@ static void vect_tbl_proc(uint16_t addr)
 static void cpu_reset(void)
 {
     // レジスタ初期化
-    s_6502.p_reg = &s_reg;
-    s_6502.p_reg->psr.byte = 0;
-    s_6502.p_reg->psr.bit.i = 1;
-    s_6502.p_reg->psr.bit.b = 1;
-    s_6502.p_reg->psr.bit.r = 1;
-    s_6502.p_reg->a = 0x00;
-    s_6502.p_reg->x = 0x00;
-    s_6502.p_reg->y = 0x00;
-    s_6502.p_reg->sp = SP_INIT_VAL;
-    s_6502.p_reg->pc = RST_VECT_TBL_ADDR;
+    s_cpu_6502.p_reg = &s_reg;
+    s_cpu_6502.p_reg->psr.byte = 0;
+    s_cpu_6502.p_reg->psr.bit.i = 1;
+    s_cpu_6502.p_reg->psr.bit.b = 1;
+    s_cpu_6502.p_reg->psr.bit.r = 1;
+    s_cpu_6502.p_reg->a = 0x00;
+    s_cpu_6502.p_reg->x = 0x00;
+    s_cpu_6502.p_reg->y = 0x00;
+    s_cpu_6502.p_reg->sp = SP_INIT_VAL;
+    s_cpu_6502.p_reg->pc = RST_VECT_TBL_ADDR;
 
     // RAM初期化
     memset(&s_ram[0], 0x00, CPU_6502_RAM_SIZE);
-    s_6502.p_ram = &s_ram[0];
-}
-
-/**
- * @brief 6502の命令フェッチ
- * 
- */
-static void cpu_instr_fetch(void)
-{
-    // TODO:
-}
-
-/**
- * @brief 6502の命令デコード
- * 
- */
-static void cpu_instr_decode(void)
-{
-    // TODO:
-}
-
-/**
- * @brief 6502の命令実行
- * 
- */
-static void cpu_instr_exec(void)
-{
-    // TODO:
+    s_cpu_6502.p_ram = &s_ram[0];
 }
 
 /**
@@ -194,11 +168,11 @@ void cpu_6502_init(void)
 
     // ROM初期化
     memset(&s_rom[0], 0x00, CPU_6502_ROM_SIZE);
-    s_6502.p_rom = &s_rom[0];
+    s_cpu_6502.p_rom = &s_rom[0];
 
     // RAM初期化
     memset(&s_ram[0], 0x00, CPU_6502_RAM_SIZE);
-    s_6502.p_ram = &s_ram[0];
+    s_cpu_6502.p_ram = &s_ram[0];
 }
 
 /**
@@ -207,27 +181,18 @@ void cpu_6502_init(void)
  */
 void cpu_6502_main(void)
 {
+
 #ifdef DEBUG_CPU_6502
     dbg_6502_info_print();
 #endif // DEBUG_CPU_6502
 
     // 命令フェッチ
-    uint8_t op = mem_byte_read(s_6502.p_reg->pc);
+    uint8_t op = mem_byte_read(s_cpu_6502.p_reg->pc);
 
-    // 命令デコード・実行
-    switch (op) {
-        case 0xEA: // NOP
-            s_6502.p_reg->pc += 1;
-            break;
-
-        default:
-            // 未実装命令
-            printf(ANSI_ESC_PG_RED
-                "[ERROR] Undefined Instr : 0x%02X (PC=0x%04X)\n"
-                ANSI_ESC_PG_RESET, op, s_6502.p_reg->pc);
-                s_6502.p_reg->pc += 1;
-            break;
+    // 命令デコード、実行
+    if (g_6502_opcode_tbl[op].p_func != NULL) {
+        g_6502_opcode_tbl[op].p_func(&s_cpu_6502);
     }
 
-    s_6502.p_reg->pc += 1;
+    s_cpu_6502.p_reg->pc += 1;
 }
