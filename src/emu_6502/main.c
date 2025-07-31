@@ -21,6 +21,10 @@
 #include "common.h"
 #include "cpu_6502.h"
 
+// WDT有効マクロ
+// #define WDT_ENABLE
+
+#if 0
 // (DEBUG)デバッグ用のUART
 #define UART_ID uart1
 #define BAUD_RATE 115200
@@ -47,11 +51,13 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
     // Put your timeout handler code in here
     return 0;
 }
+#endif
 
 int main()
 {
     stdio_init_all();
 
+#if 0
     int chan = dma_claim_unused_channel(true);
     dma_channel_config c = dma_channel_get_default_config(chan);
     channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
@@ -83,17 +89,18 @@ int main()
     if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     }
+#endif
 
 #ifdef WDT_ENABLE
-    watchdog_enable(100, 1);
-
+    // WDT OVF = 6000ms = 6秒
+    watchdog_enable(6000, 1);
     watchdog_update();
 #endif
 
+#if 0
     printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
     printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
 
-#if 0
     // (DEBUG)デバッグ用のUART
     uart_init(UART_ID, BAUD_RATE);
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
@@ -104,7 +111,7 @@ int main()
 
     // 6502エミュレート
     cpu_6502_init();
-    printf("6502 Emu in RP2350\n");
+    printf("[info] 6502 Emu in RP2350\n");
 
     while (true)
     {

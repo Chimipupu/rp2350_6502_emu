@@ -10,6 +10,7 @@
  */
 
 #include "cpu_6502.h"
+#include "ansi_esc.h"
 #include <stdio.h>
 
 cpu_6502_reg_t s_reg;
@@ -221,8 +222,10 @@ void cpu_6502_main(void)
 
         default:
             // 未実装命令
-            printf("[ERROR] Undefined Instr : 0x%02X (PC=0x%04X)\n", op, s_6502.p_reg->pc);
-            s_6502.p_reg->pc += 1;
+            printf(ANSI_ESC_PG_RED
+                "[ERROR] Undefined Instr : 0x%02X (PC=0x%04X)\n"
+                ANSI_ESC_PG_RESET, op, s_6502.p_reg->pc);
+                s_6502.p_reg->pc += 1;
             break;
     }
 
