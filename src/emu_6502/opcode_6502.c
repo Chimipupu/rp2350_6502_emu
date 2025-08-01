@@ -12,34 +12,56 @@
 #include "opcode_6502.h"
 #include "ansi_esc.h"
 
+static void op_nop(cpu_6502_data_t *p_cpu, uint8_t addressing);
+static void op_brk(cpu_6502_data_t *p_cpu, uint8_t addressing);
+static void op_bpl(cpu_6502_data_t *p_cpu, uint8_t addressing);
+static void op_clc(cpu_6502_data_t *p_cpu, uint8_t addressing);
+static void op_ora(cpu_6502_data_t *p_cpu, uint8_t addressing);
+static void op_lda(cpu_6502_data_t *p_cpu, uint8_t addressing);
+static void op_php(cpu_6502_data_t *p_cpu, uint8_t addressing);
+static void op_inc(cpu_6502_data_t *p_cpu, uint8_t addressing);
+static void op_kil(cpu_6502_data_t *p_cpu, uint8_t addressing);
+
 // 6502 NOP命令
-void op_nop(cpu_6502_data_t *p_cpu, uint8_t addressing)
+static void op_nop(cpu_6502_data_t *p_cpu, uint8_t addressing)
 {
     printf("[DEBUG] NOP\n");
     __asm __volatile("nop");
 }
 
 // 6502 ASL命令
-void op_asl(cpu_6502_data_t *p_cpu, uint8_t addressing)
+static void op_asl(cpu_6502_data_t *p_cpu, uint8_t addressing)
 {
     printf("[DEBUG] ASL\n");
 }
 
 // 6502 BRK命令
-void op_brk(cpu_6502_data_t *p_cpu, uint8_t addressing)
+static void op_brk(cpu_6502_data_t *p_cpu, uint8_t addressing)
 {
     printf("[DEBUG] BRK\n");
     p_cpu->p_reg->psr.bit.b = 1;
 }
 
+// 6502 BPL命令
+static void op_bpl(cpu_6502_data_t *p_cpu, uint8_t addressing)
+{
+    printf("[DEBUG] BPL\n");
+}
+
+// 6502 CLC命令
+static void op_clc(cpu_6502_data_t *p_cpu, uint8_t addressing)
+{
+    printf("[DEBUG] CLC\n");
+}
+
 // 6502 ORA命令
-void op_ora(cpu_6502_data_t *p_cpu, uint8_t addressing)
+static void op_ora(cpu_6502_data_t *p_cpu, uint8_t addressing)
 {
     printf("[DEBUG] ORA\n");
 }
 
 // 6502 LDA命令
-void op_lda(cpu_6502_data_t *p_cpu, uint8_t addressing)
+static void op_lda(cpu_6502_data_t *p_cpu, uint8_t addressing)
 {
     uint8_t val;
 
@@ -50,13 +72,19 @@ void op_lda(cpu_6502_data_t *p_cpu, uint8_t addressing)
 }
 
 // 6502 PHP命令
-void op_php(cpu_6502_data_t *p_cpu, uint8_t addressing)
+static void op_php(cpu_6502_data_t *p_cpu, uint8_t addressing)
 {
     printf("[DEBUG] PHP\n");
 }
 
+// 6502 INC命令
+static void op_inc(cpu_6502_data_t *p_cpu, uint8_t addressing)
+{
+    printf("[DEBUG] INC\n");
+}
+
 // 6502 未定義命令(KIL)
-void op_kil(cpu_6502_data_t *p_cpu, uint8_t addressing)
+static void op_kil(cpu_6502_data_t *p_cpu, uint8_t addressing)
 {
     // TODO : (TBD)6502に忠実に従うと未定義命令(KIL) CPUをハングアップ
     printf(  "[ERROR] Undefined OP KIL\n");
@@ -64,39 +92,39 @@ void op_kil(cpu_6502_data_t *p_cpu, uint8_t addressing)
 
 // 6502 命令セット(OPCode)テーブル
 const opcode_6502_t g_6502_opcode_tbl[] = {
-    { BRK, S, 7, op_brk },      // 0x00 BRK S
-    { ORA, IZX, 6, op_ora },      // 0x01 ORA izx
-    { KIL, NONE, 1, op_kil},    // 0x02 未定義命令
-    { KIL, NONE, 1, op_kil},    // 0x03 未定義命令
-    { KIL, NONE, 1, op_kil},    // 0x04 未定義命令
-    { ORA, ZP, 1, op_ora},      // 0x05 ORA zp
-    { ASL, ZP, 1, op_asl},      // 0x06 ASL zp
-    { KIL, NONE, 1, op_kil},    // 0x07 未定義命令
-    { PHP, S, 1, op_php},       // 0x08 PHP Stack S
-    { ORA, IMM, 1, op_ora},     // 0x09 ORA #
-    { ASL, A, 1, op_asl},       // 0x0A ASL A
-    { KIL, NONE, 1, op_kil},    // 0x0B 未定義命令
-    { KIL, NONE, 1, op_kil},    // 0x0C 未定義命令
-    { ORA, A, 1, op_ora},       // 0x0D ORA A
-    { ASL, A, 1, op_asl},       // 0x0E ASL A
-    { KIL, NONE, 1, op_kil},    // 0x0F 未定義命令
+    { BRK, S,     7, op_brk },   // 0x00 BRK S
+    { ORA, IZX,   6, op_ora },   // 0x01 ORA izx
+    { KIL, NONE,  1, op_kil},    // 0x02 未定義命令
+    { KIL, NONE,  1, op_kil},    // 0x03 未定義命令
+    { KIL, NONE,  1, op_kil},    // 0x04 未定義命令
+    { ORA, ZP,    1, op_ora},    // 0x05 ORA zp
+    { ASL, ZP,    1, op_asl},    // 0x06 ASL zp
+    { KIL, NONE,  1, op_kil},    // 0x07 未定義命令
+    { PHP, S,     1, op_php},    // 0x08 PHP Stack S
+    { ORA, IMM,   1, op_ora},    // 0x09 ORA #
+    { ASL, ABS,   1, op_asl},    // 0x0A ASL a
+    { KIL, NONE,  1, op_kil},    // 0x0B 未定義命令
+    { KIL, NONE,  1, op_kil},    // 0x0C 未定義命令
+    { ORA, ABS,   1, op_ora},    // 0x0D ORA a
+    { ASL, ABS,   1, op_asl},    // 0x0E ASL a
+    { KIL, NONE,  1, op_kil},    // 0x0F 未定義命令
 
-    { KIL, NONE, 1, op_kil},    // 0x10 
-    { KIL, NONE, 1, op_kil},    // 0x11 
-    { KIL, NONE, 1, op_kil},    // 0x12 
-    { KIL, NONE, 1, op_kil},    // 0x13 
-    { KIL, NONE, 1, op_kil},    // 0x14 
-    { KIL, NONE, 1, op_kil},    // 0x15 
-    { KIL, NONE, 1, op_kil},    // 0x16 
-    { KIL, NONE, 1, op_kil},    // 0x17 
-    { KIL, NONE, 1, op_kil},    // 0x18 
-    { KIL, NONE, 1, op_kil},    // 0x19 
-    { KIL, NONE, 1, op_kil},    // 0x1A 
-    { KIL, NONE, 1, op_kil},    // 0x1B 
-    { KIL, NONE, 1, op_kil},    // 0x1C 
-    { KIL, NONE, 1, op_kil},    // 0x1D 
-    { KIL, NONE, 1, op_kil},    // 0x1E 
-    { KIL, NONE, 1, op_kil},    // 0x1F 
+    { BPL, REL,   1, op_bpl},   // 0x10 BPL r
+    { ORA, ZPY,   1, op_ora},   // 0x11 ORA zpy
+    { ORA, ZP,    1, op_ora},   // 0x12 ORA zp
+    { KIL, NONE,  1, op_kil},   // 0x13 未定義命令
+    { KIL, NONE,  1, op_kil},   // 0x14 未定義命令
+    { ORA, ZPX,   1, op_ora},   // 0x15 ORA zp,x
+    { ASL, ZPX,   1, op_asl},   // 0x16 ASL zp,x
+    { KIL, NONE,  1, op_kil},   // 0x17 未定義命令
+    { CLC, IMM_I, 1, op_clc},   // 0x18 CLC i
+    { ORA, ABY,   1, op_ora},   // 0x19 ORA a,y
+    { INC, ABS,   1, op_inc},   // 0x1A INC a
+    { KIL, NONE,  1, op_kil},   // 0x1B 未定義命令
+    { KIL, NONE,  1, op_kil},   // 0x1C 未定義命令
+    { ORA, ABX,   1, op_ora},   // 0x1D ORA a,x
+    { ASL, ABX,   1, op_asl},   // 0x1E ASL a,x
+    { KIL, NONE,  1, op_kil},   // 0x1F 未定義命令
 
     { KIL, NONE, 1, op_kil},    // 0x20 
     { KIL, NONE, 1, op_kil},    // 0x21 

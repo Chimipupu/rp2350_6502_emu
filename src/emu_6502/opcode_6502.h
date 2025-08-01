@@ -18,13 +18,6 @@
 
 #include "cpu_6502.h"
 
-extern void op_brk(cpu_6502_data_t *p_cpu, uint8_t addressing);
-extern void op_nop(cpu_6502_data_t *p_cpu, uint8_t addressing);
-extern void op_ora(cpu_6502_data_t *p_cpu, uint8_t addressing);
-extern void op_lda(cpu_6502_data_t *p_cpu, uint8_t addressing);
-extern void op_php(cpu_6502_data_t *p_cpu, uint8_t addressing);
-extern void op_kil(cpu_6502_data_t *p_cpu, uint8_t addressing);
-
 typedef enum {
     NOP = 0x01,
     KIL,    // 未定義命令
