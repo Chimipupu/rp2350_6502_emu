@@ -181,7 +181,6 @@ void cpu_6502_init(void)
  */
 void cpu_6502_main(void)
 {
-
 #ifdef DEBUG_CPU_6502
     dbg_6502_info_print();
 #endif // DEBUG_CPU_6502
@@ -191,7 +190,7 @@ void cpu_6502_main(void)
 
     // 命令デコード、実行
     if (g_6502_opcode_tbl[op].p_func != NULL) {
-        g_6502_opcode_tbl[op].p_func(&s_cpu_6502);
+        g_6502_opcode_tbl[op].p_func(&s_cpu_6502, g_6502_opcode_tbl[op].addrsig);
     }
 
     s_cpu_6502.p_reg->pc += 1;

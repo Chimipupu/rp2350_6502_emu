@@ -60,18 +60,21 @@
 
 // 6502 アドレッシング
 typedef enum {
-    IMM = 0x00,         // イミディエイト（即値）
+    NONE = 0x00,        // なし
+    IMM,                // イミディエイト（即値）
     ZP,                 // ゼロページ
     ZPX,                // ゼロページXインデックス
     ZPY,                // ゼロページYインデックス
+    A,                  // アキュムレータ A
+    S,                  // Stack S
     IZX,                // インデックス付き間接（X）
     IZY,                // 間接インデックス付き（Y）
     ABS,                // 絶対アドレス
     ABX,                // 絶対Xインデックス
     ABY,                // 絶対Yインデックス
     IND,                // 間接
-    REL                // 相対（分岐命令用）
-} e_addrig;
+    REL                 // 相対（分岐命令用）
+} e_addrssing_6502;
 
 // CPU 6502レジスタの構造体
 typedef struct {
@@ -101,6 +104,14 @@ typedef struct {
     uint8_t *p_rom;           // ROMのポインタ
     uint8_t *p_ram;           // RAMのポインタ
 } cpu_6502_data_t;
+
+typedef struct {
+    uint8_t opcode;                           // オペコード
+    uint8_t addrsig;                          // アドレッシング
+    uint8_t cycle;                            // サイクル数
+    void (*p_func)(cpu_6502_data_t* p_cpu,    // コールバック関数(引数:CPU構造体、アドレッシング)
+                    uint8_t addressing);
+} opcode_6502_t;
 
 uint8_t mem_byte_read(uint16_t addr);
 void mem_byte_write(uint16_t addr, uint8_t val);
